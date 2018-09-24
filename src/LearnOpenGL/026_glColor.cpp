@@ -1,16 +1,16 @@
 /**
-* @file    024_glCamera.cpp
+* @file    026_glColor.cpp
 * <pre>
 * Copyright (c) 2018, Gaaagaa All rights reserved.
 * 
-* 文件名称：024_glCamera.cpp
-* 创建日期：2018年09月19日
+* 文件名称：026_glColor.cpp
+* 创建日期：2018年09月21日
 * 文件标识：
-* 文件摘要：LearnOpenGL 示例程序：摄像机。
+* 文件摘要：LearnOpenGL 示例程序：颜色。
 * 
 * 当前版本：1.0.0.0
 * 作    者：
-* 完成日期：2018年09月19日
+* 完成日期：2018年09月21日
 * 版本摘要：
 * 
 * 取代版本：
@@ -49,7 +49,6 @@
 // 相关数据、接口的前置声明
 // 
 
-
 const GLuint WIDTH  = 800;  ///< 窗口绘图客户区的宽度
 const GLuint HEIGHT = 600;  ///< 窗口绘图客户区的高度
 
@@ -68,8 +67,21 @@ typedef struct glmCameraParam
 	GLfloat    mouseYPos;    ///< 记录鼠标移动的垂直位置
 	GLfloat    viewPitch;    ///< 视图俯仰角
 	GLfloat    viewYaw;      ///< 视图偏航角
-	GLfloat    viewZoom;    ///< 视图缩放量
+	GLfloat    viewZoom;     ///< 视图缩放量
 } glmCameraParam;
+
+/**********************************************************/
+/**
+* @brief 修改摄像机位置控制参数中的视图偏移相关字段值。
+*
+* @param [in ] xCamera : 摄像机位置控制参数。
+* @param [in ] xpos    : 水平坐标。
+* @param [in ] ypos    : 垂直坐标。
+*
+* @return void
+*
+*/
+void view_offset(glmCameraParam * xCamera, double xpos, double ypos);
 
 /**********************************************************/
 /**
@@ -143,9 +155,9 @@ int main(int argc, char * argv[])
 	//======================================
 
 	std::cout << "Starting GLFW context, OpenGL 3.3" << std::endl;
-	if (argc < 4)
+	if (argc < 5)
 	{
-		std::cout << "<usage>\n\t" << argv[0] << " <vertex.vs> <fragment.frag> <texture.jpg>" << std::endl;
+		std::cout << "<usage>\n\t" << argv[0] << " <Lighting.vs> <Lighting.frag> <Lamp.vs> <Lamp.frag>" << std::endl;
 		return -1;
 	}
 
@@ -161,7 +173,7 @@ int main(int argc, char * argv[])
 	//======================================
 	// create window
 
-	GLFWwindow * window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL - 024 - glCamera", NULL, NULL);
+	GLFWwindow * window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL - 026 - glColor", NULL, NULL);
 	if (NULL == window)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -170,9 +182,9 @@ int main(int argc, char * argv[])
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetKeyCallback(window, &key_callback);
-	glfwSetCursorPosCallback(window, &mouse_callback);
+	// glfwSetCursorPosCallback(window, &mouse_callback);
 	glfwSetScrollCallback(window, &scroll_callback);
 
 	//======================================
@@ -195,15 +207,31 @@ int main(int argc, char * argv[])
 	glViewport(0, 0, cx, cy);
 
 	//======================================
-	// Create shader object
+	// Create shader objects
 
 	char * xerrlog = NULL;
 
-	vxGLShader xshader;
-	nerror = xshader.create(argv[1], argv[2], &xerrlog);
+	vxGLShader xLightShader;
+	nerror = xLightShader.create(argv[1], argv[2], &xerrlog);
 	if (0 != nerror)
 	{
-		std::cout << "create shader error : " << nerror << std::endl;
+		std::cout << "create shader_light error : " << nerror << std::endl;
+		if (NULL != xerrlog)
+		{
+			std::cout << "error information : \n" << xerrlog << std::endl;
+			free(xerrlog);
+			xerrlog = NULL;
+		}
+
+		glfwTerminate();
+		return -1;
+	}
+
+	vxGLShader xLampShader;
+	nerror = xLampShader.create(argv[3], argv[4], &xerrlog);
+	if (0 != nerror)
+	{
+		std::cout << "create shader_lamp error : " << nerror << std::endl;
 		if (NULL != xerrlog)
 		{
 			std::cout << "error information : \n" << xerrlog << std::endl;
@@ -220,114 +248,90 @@ int main(int argc, char * argv[])
 
 	GLfloat vertices[] =
 	{
-		// --- Positions --- Texture Coords ---
-		-0.5F, -0.5F, -0.5F,  0.0F, 0.0F,
-		 0.5F, -0.5F, -0.5F,  1.0F, 0.0F,
-		 0.5F,  0.5F, -0.5F,  1.0F, 1.0F,
-		 0.5F,  0.5F, -0.5F,  1.0F, 1.0F,
-		-0.5F,  0.5F, -0.5F,  0.0F, 1.0F,
-		-0.5F, -0.5F, -0.5F,  0.0F, 0.0F,
+		// --- Positions ---
+		-0.5F, -0.5F, -0.5F,
+		 0.5F, -0.5F, -0.5F,
+		 0.5F,  0.5F, -0.5F,
+		 0.5F,  0.5F, -0.5F,
+		-0.5F,  0.5F, -0.5F,
+		-0.5F, -0.5F, -0.5F,
 
-		-0.5F, -0.5F,  0.5F,  0.0F, 0.0F,
-		 0.5F, -0.5F,  0.5F,  1.0F, 0.0F,
-		 0.5F,  0.5F,  0.5F,  1.0F, 1.0F,
-		 0.5F,  0.5F,  0.5F,  1.0F, 1.0F,
-		-0.5F,  0.5F,  0.5F,  0.0F, 1.0F,
-		-0.5F, -0.5F,  0.5F,  0.0F, 0.0F,
+		-0.5F, -0.5F,  0.5F,
+		 0.5F, -0.5F,  0.5F,
+		 0.5F,  0.5F,  0.5F,
+		 0.5F,  0.5F,  0.5F,
+		-0.5F,  0.5F,  0.5F,
+		-0.5F, -0.5F,  0.5F,
 
-		-0.5F,  0.5F,  0.5F,  1.0F, 0.0F,
-		-0.5F,  0.5F, -0.5F,  1.0F, 1.0F,
-		-0.5F, -0.5F, -0.5F,  0.0F, 1.0F,
-		-0.5F, -0.5F, -0.5F,  0.0F, 1.0F,
-		-0.5F, -0.5F,  0.5F,  0.0F, 0.0F,
-		-0.5F,  0.5F,  0.5F,  1.0F, 0.0F,
+		-0.5F,  0.5F,  0.5F,
+		-0.5F,  0.5F, -0.5F,
+		-0.5F, -0.5F, -0.5F,
+		-0.5F, -0.5F, -0.5F,
+		-0.5F, -0.5F,  0.5F,
+		-0.5F,  0.5F,  0.5F,
 
-		 0.5F,  0.5F,  0.5F,  1.0F, 0.0F,
-		 0.5F,  0.5F, -0.5F,  1.0F, 1.0F,
-		 0.5F, -0.5F, -0.5F,  0.0F, 1.0F,
-		 0.5F, -0.5F, -0.5F,  0.0F, 1.0F,
-		 0.5F, -0.5F,  0.5F,  0.0F, 0.0F,
-		 0.5F,  0.5F,  0.5F,  1.0F, 0.0F,
+		 0.5F,  0.5F,  0.5F,
+		 0.5F,  0.5F, -0.5F,
+		 0.5F, -0.5F, -0.5F,
+		 0.5F, -0.5F, -0.5F,
+		 0.5F, -0.5F,  0.5F,
+		 0.5F,  0.5F,  0.5F,
 
-		-0.5F, -0.5F, -0.5F,  0.0F, 1.0F,
-		 0.5F, -0.5F, -0.5F,  1.0F, 1.0F,
-		 0.5F, -0.5F,  0.5F,  1.0F, 0.0F,
-		 0.5F, -0.5F,  0.5F,  1.0F, 0.0F,
-		-0.5F, -0.5F,  0.5F,  0.0F, 0.0F,
-		-0.5F, -0.5F, -0.5F,  0.0F, 1.0F,
+		-0.5F, -0.5F, -0.5F,
+		 0.5F, -0.5F, -0.5F,
+		 0.5F, -0.5F,  0.5F,
+		 0.5F, -0.5F,  0.5F,
+		-0.5F, -0.5F,  0.5F,
+		-0.5F, -0.5F, -0.5F,
 
-		-0.5F,  0.5F, -0.5F,  0.0F, 1.0F,
-		 0.5F,  0.5F, -0.5F,  1.0F, 1.0F,
-		 0.5F,  0.5F,  0.5F,  1.0F, 0.0F,
-		 0.5F,  0.5F,  0.5F,  1.0F, 0.0F,
-		-0.5F,  0.5F,  0.5F,  0.0F, 0.0F,
-		-0.5F,  0.5F, -0.5F,  0.0F, 1.0F
+		-0.5F,  0.5F, -0.5F,
+		 0.5F,  0.5F, -0.5F,
+		 0.5F,  0.5F,  0.5F,
+		 0.5F,  0.5F,  0.5F,
+		-0.5F,  0.5F,  0.5F,
+		-0.5F,  0.5F, -0.5F
 	};
 
-	GLuint VAO = 0;
-	GLuint VBO = 0;
+	GLuint lightVAO = 0;
+	GLuint cubeVBO  = 0;
+	GLuint lampVAO  = 0;
 
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-
-	glBindVertexArray(VAO);
+	glGenBuffers(1, &cubeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
+	{
 		// Position attribute
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)0);
+		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid *)0);
 		glEnableVertexAttribArray(0);
-		// TexCoord attribute
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+	glBindVertexArray(0);
+
+	glGenVertexArrays(1, &lampVAO);
+	glBindVertexArray(lampVAO);
+	{
+		// Position attribute
+		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid *)0);
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	glBindVertexArray(0);
 
 	//======================================
-	// Load and create a texture
-
-	GLuint texture = 0;
-	glGenTextures(1, &texture);
-
-	glBindTexture(GL_TEXTURE_2D, texture);
-	{
-		// Set the texture wrapping parameters
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		// Set the texture filtering parameters
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		// Load image, create texture and generate mipmaps
-		GLubyte * image = SOIL_load_image(argv[3], &cx, &cy, NULL, SOIL_LOAD_RGB);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cx, cy, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-		glGenerateMipmap(GL_TEXTURE_2D);
-		SOIL_free_image_data(image);
-	}
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	//======================================
 
 	glm::mat4 mtxIdentity(1.0F);
-	glm::mat4 mtx4P = glm::perspective(glm::radians(45.0F), ((GLfloat)WIDTH) / ((GLfloat)HEIGHT), 0.1F, 100.0F);
-
-	glm::vec3 cubePositions[] =
-	{
-		glm::vec3( 0.0F,  0.0F,  0.0F),
-		glm::vec3( 2.0F,  5.0F, -15.0F),
-		glm::vec3(-1.5F, -2.2F, -2.5F),
-		glm::vec3(-3.8F, -2.0F, -12.3F),
-		glm::vec3( 2.4F, -0.4F, -3.5F),
-		glm::vec3(-1.7F,  3.0F, -7.5F),
-		glm::vec3( 1.3F, -2.0F, -2.5F),
-		glm::vec3( 1.5F,  2.0F, -2.5F),
-		glm::vec3( 1.5F,  0.2F, -1.5F),
-		glm::vec3(-1.3F,  1.0F, -1.5F)
-	};
 
 	glmCameraParam xCameraParam;
 	xCameraParam.cameraSpeed = 0.1F;
-	xCameraParam.cameraPos   = glm::vec3(0.0F, 0.0F,  3.0F);
+	xCameraParam.cameraPos   = glm::vec3(0.0F, 0.0F,  5.0F);
 	xCameraParam.cameraFront = glm::vec3(0.0F, 0.0F, -1.0F);
 	xCameraParam.cameraUp    = glm::vec3(0.0F, 1.0F,  0.0F);
 	xCameraParam.mouseXPos   = cx / 2.0F;
@@ -337,7 +341,12 @@ int main(int argc, char * argv[])
 	xCameraParam.viewZoom   = 45.0F;
 	glfwSetWindowUserPointer(window, &xCameraParam);
 
+	view_offset(&xCameraParam, xCameraParam.mouseXPos, xCameraParam.mouseYPos);
+
 	//======================================
+
+	// Light attributes
+	glm::vec3 v3LampPosition(1.2F, 1.0F, 2.0F);
 
 	GLfloat deltaTime  = 0.0F;
 	GLfloat updateTime = (GLfloat)glfwGetTime();
@@ -356,32 +365,36 @@ int main(int argc, char * argv[])
 		glClearColor(0.2F, 0.3F, 0.3F, 1.0F);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glBindTexture(GL_TEXTURE_2D, texture);
-
-		glUseProgram(xshader.program_id());
+		glUseProgram(xLightShader.program_id());
 		{
-			GLfloat   xtime = (GLfloat)glfwGetTime();
-			glm::mat4 mtx4V = glm::lookAt(xCameraParam.cameraPos,
-										  xCameraParam.cameraPos + xCameraParam.cameraFront,
-										  xCameraParam.cameraUp);
+			glUniform3f(glGetUniformLocation(xLightShader.program_id(), "objectColor"), 1.0F, 0.5F, 0.31F);
+			glUniform3f(glGetUniformLocation(xLightShader.program_id(), "lightColor" ), 1.0F, 0.5F, 1.0F );
 
-			mtx4P = glm::perspective(xCameraParam.viewZoom, ((GLfloat)WIDTH) / ((GLfloat)HEIGHT), 0.1F, 100.0F);
+			glm::mat4 mtx4M = glm::translate(mtxIdentity, glm::vec3(0.0F, 0.0F, 0.0F));
+			glm::mat4 mtx4V = glm::lookAt(xCameraParam.cameraPos, xCameraParam.cameraPos + xCameraParam.cameraFront, xCameraParam.cameraUp);
+			glm::mat4 mtx4P = glm::perspective(xCameraParam.viewZoom, ((GLfloat)WIDTH) / ((GLfloat)HEIGHT), 0.1F, 100.0F);
 
-			glUniformMatrix4fv(glGetUniformLocation(xshader.program_id(), "mtx4V"), 1, GL_FALSE, glm::value_ptr(mtx4V));
-			glUniformMatrix4fv(glGetUniformLocation(xshader.program_id(), "mtx4P"), 1, GL_FALSE, glm::value_ptr(mtx4P));
+			glUniformMatrix4fv(glGetUniformLocation(xLightShader.program_id(), "mtx4M"), 1, GL_FALSE, glm::value_ptr(mtx4M));
+			glUniformMatrix4fv(glGetUniformLocation(xLightShader.program_id(), "mtx4V"), 1, GL_FALSE, glm::value_ptr(mtx4V));
+			glUniformMatrix4fv(glGetUniformLocation(xLightShader.program_id(), "mtx4P"), 1, GL_FALSE, glm::value_ptr(mtx4P));
 
-			glBindVertexArray(VAO);
+			glBindVertexArray(lightVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+		}
 
-			for (GLuint i = 0; i < 10; ++i)
-			{
-				glm::mat4 mtx4M;
-				mtx4M = glm::translate(mtxIdentity, cubePositions[i]);
-				mtx4M = glm::rotate(mtx4M, glm::radians(i * 10.0F) + xtime * i, glm::vec3(1.0F, 0.3F, 0.5F));
-				glUniformMatrix4fv(glGetUniformLocation(xshader.program_id(), "mtx4M"), 1, GL_FALSE, glm::value_ptr(mtx4M));
+		glUseProgram(xLampShader.program_id());
+		{
+			glm::mat4 mtx4M = glm::scale(glm::translate(mtxIdentity, v3LampPosition), glm::vec3(0.2F));
+			glm::mat4 mtx4V = glm::lookAt(xCameraParam.cameraPos, xCameraParam.cameraPos + xCameraParam.cameraFront, xCameraParam.cameraUp);
+			glm::mat4 mtx4P = glm::perspective(xCameraParam.viewZoom, ((GLfloat)WIDTH) / ((GLfloat)HEIGHT), 0.1F, 100.0F);
 
-				glDrawArrays(GL_TRIANGLES, 0, 36);
-			}
+			glUniformMatrix4fv(glGetUniformLocation(xLampShader.program_id(), "mtx4M"), 1, GL_FALSE, glm::value_ptr(mtx4M));
+			glUniformMatrix4fv(glGetUniformLocation(xLampShader.program_id(), "mtx4V"), 1, GL_FALSE, glm::value_ptr(mtx4V));
+			glUniformMatrix4fv(glGetUniformLocation(xLampShader.program_id(), "mtx4P"), 1, GL_FALSE, glm::value_ptr(mtx4P));
 
+			glBindVertexArray(lampVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
 			glBindVertexArray(0);
 		}
 
@@ -405,9 +418,9 @@ int main(int argc, char * argv[])
 	//======================================
 	// Cleanup and terminate
 
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteTextures(1, &texture);
+	glDeleteVertexArrays(1, &lightVAO);
+	glDeleteVertexArrays(1, &lampVAO);
+	glDeleteBuffers(1, &cubeVBO);
 
 	glfwTerminate();
 
@@ -417,6 +430,44 @@ int main(int argc, char * argv[])
 }
 
 //====================================================================
+
+
+/**********************************************************/
+/**
+* @brief 修改摄像机位置控制参数中的视图偏移相关字段值。
+* 
+* @param [in ] xCamera : 摄像机位置控制参数。
+* @param [in ] xpos    : 水平坐标。
+* @param [in ] ypos    : 垂直坐标。
+* 
+* @return void
+*         
+*/
+void view_offset(glmCameraParam * xCamera, double xpos, double ypos)
+{
+	GLfloat xOffset = (GLfloat)xpos - xCamera->mouseXPos;
+	GLfloat yOffset = xCamera->mouseYPos - (GLfloat)ypos;
+	xCamera->mouseXPos = (GLfloat)xpos;
+	xCamera->mouseYPos = (GLfloat)ypos;
+
+	const GLfloat sensitivity = 0.05F;
+	xOffset *= sensitivity;
+	yOffset *= sensitivity;
+
+	xCamera->viewYaw   += xOffset;
+	xCamera->viewPitch += yOffset;
+
+	if (xCamera->viewPitch > 89.0F)
+		xCamera->viewPitch = 89.0F;
+	else if (xCamera->viewPitch < -89.0F)
+		xCamera->viewPitch = -89.0F;
+
+	glm::vec3 cameraFront;
+	cameraFront.x = cos(glm::radians(xCamera->viewYaw)) * cos(glm::radians(xCamera->viewPitch));
+	cameraFront.y = sin(glm::radians(xCamera->viewPitch));
+	cameraFront.z = sin(glm::radians(xCamera->viewYaw)) * cos(glm::radians(xCamera->viewPitch));
+	xCamera->cameraFront = glm::normalize(cameraFront);
+}
 
 /**********************************************************/
 /**
@@ -494,10 +545,34 @@ bool key_movement(GLFWwindow * window, int key, int scancode, int action, int mo
 		xCamera->cameraPos += cameraSpeed * glm::normalize(glm::cross(xCamera->cameraFront, xCamera->cameraUp));
 		break;
 
+	case GLFW_KEY_LEFT:
+		view_offset(xCamera, xCamera->mouseXPos - ((GLFW_REPEAT != action) ? 4.0F : 8.0F), xCamera->mouseYPos);
+		break;
+
+	case GLFW_KEY_UP:
+		view_offset(xCamera, xCamera->mouseXPos, xCamera->mouseYPos + ((GLFW_REPEAT != action) ? 4.0F : 8.0F));
+		break;
+
+	case GLFW_KEY_RIGHT:
+		view_offset(xCamera, xCamera->mouseXPos + ((GLFW_REPEAT != action) ? 4.0F : 8.0F), xCamera->mouseYPos);
+		break;
+
+	case GLFW_KEY_DOWN:
+		view_offset(xCamera, xCamera->mouseXPos, xCamera->mouseYPos - ((GLFW_REPEAT != action) ? 4.0F : 8.0F));
+		break;
+
 	default:
 		return false;
 		break;
 	}
+
+	//======================================
+
+	std::cout << "View : "
+			  << "PY("    << xCamera->viewPitch     << ", " << xCamera->viewYaw       << ") "
+			  << "Pos("   << xCamera->cameraPos.x   << ", " << xCamera->cameraPos.y   << ", " << xCamera->cameraPos.z   << ") "
+			  << "Front(" << xCamera->cameraFront.x << ", " << xCamera->cameraFront.y << ", " << xCamera->cameraFront.z << ") "
+			  << "Up("    << xCamera->cameraUp.x    << ", " << xCamera->cameraUp.y    << ", " << xCamera->cameraUp.z    << ")" << std::endl;
 
 	//======================================
 
@@ -531,28 +606,7 @@ void mouse_callback(GLFWwindow * window, double xpos, double ypos)
 		mouseFirstInput = GL_FALSE;
 	}
 
-	GLfloat xOffset = (GLfloat)xpos - xCamera->mouseXPos;
-	GLfloat yOffset = xCamera->mouseYPos - (GLfloat)ypos;
-	xCamera->mouseXPos = (GLfloat)xpos;
-	xCamera->mouseYPos = (GLfloat)ypos;
-
-	const GLfloat sensitivity = 0.05F;
-	xOffset *= sensitivity;
-	yOffset *= sensitivity;
-
-	xCamera->viewYaw   += xOffset;
-	xCamera->viewPitch += yOffset;
-
-	if (xCamera->viewPitch > 89.0F)
-		xCamera->viewPitch = 89.0F;
-	else if (xCamera->viewPitch < -89.0F)
-		xCamera->viewPitch = -89.0F;
-
-	glm::vec3 cameraFront;
-	cameraFront.x = cos(glm::radians(xCamera->viewYaw)) * cos(glm::radians(xCamera->viewPitch));
-	cameraFront.y = sin(glm::radians(xCamera->viewPitch));
-	cameraFront.z = sin(glm::radians(xCamera->viewYaw)) * cos(glm::radians(xCamera->viewPitch));
-	xCamera->cameraFront = glm::normalize(cameraFront);
+	view_offset(xCamera, xpos, ypos);
 }
 
 /**********************************************************/
@@ -582,4 +636,6 @@ void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
 		xCamera->viewZoom = 1.0F;
 	if (xCamera->viewZoom > 45.0F)
 		xCamera->viewZoom = 45.0F;
+
+	std::cout << "viewScale : " << xCamera->viewZoom << std::endl;
 }

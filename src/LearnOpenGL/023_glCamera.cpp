@@ -74,7 +74,7 @@ const GLuint HEIGHT = 600;  ///< 窗口绘图客户区的高度
 typedef struct glmCameraParam
 {
 	glm::vec3  cameraPos;    ///< 摄像机位置向量
-	glm::vec3  cameraFront;  ///< 摄像机前移向量
+	glm::vec3  cameraFront;  ///< 摄像机方向向量（方向向量 = cameraPos + cameraFront）
 	glm::vec3  cameraUp;     ///< 摄像机向上向量
 } glmCameraParam;
 

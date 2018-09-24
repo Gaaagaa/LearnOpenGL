@@ -61,14 +61,14 @@ typedef struct glmCameraParam
 {
 	GLfloat    cameraSpeed;  ///< 摄像机移动速度
 	glm::vec3  cameraPos;    ///< 摄像机位置向量
-	glm::vec3  cameraFront;  ///< 摄像机前移向量
+	glm::vec3  cameraFront;  ///< 摄像机方向向量（方向向量 = cameraPos + cameraFront）
 	glm::vec3  cameraUp;     ///< 摄像机向上向量
 
 	GLfloat    mouseXPos;    ///< 记录鼠标移动的水平位置
 	GLfloat    mouseYPos;    ///< 记录鼠标移动的垂直位置
 	GLfloat    viewPitch;    ///< 视图俯仰角
 	GLfloat    viewYaw;      ///< 视图偏航角
-	GLfloat    viewScale;    ///< 视图缩放量
+	GLfloat    viewZoom;     ///< 视图缩放量
 } glmCameraParam;
 
 /**********************************************************/
@@ -128,7 +128,7 @@ bool key_movement(GLFWwindow * window, int key, int scancode, int action, int mo
 * @return void
 *         
 */
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void mouse_callback(GLFWwindow * window, double xpos, double ypos);
 
 /**********************************************************/
 /**
@@ -141,7 +141,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 * @return void
 *
 */
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void scroll_callback(GLFWwindow * window, double xoffset, double yoffset);
 
 //====================================================================
 
@@ -347,7 +347,7 @@ int main(int argc, char * argv[])
 	xCameraParam.mouseYPos   = cy / 2.0F;
 	xCameraParam.viewPitch   = 0.0F;
 	xCameraParam.viewYaw     = -90.0F;
-	xCameraParam.viewScale   = 45.0F;
+	xCameraParam.viewZoom   = 45.0F;
 	glfwSetWindowUserPointer(window, &xCameraParam);
 
 	view_offset(&xCameraParam, xCameraParam.mouseXPos, xCameraParam.mouseYPos);
@@ -380,7 +380,7 @@ int main(int argc, char * argv[])
 										  xCameraParam.cameraPos + xCameraParam.cameraFront,
 										  xCameraParam.cameraUp);
 
-			mtx4P = glm::perspective(xCameraParam.viewScale, ((GLfloat)WIDTH) / ((GLfloat)HEIGHT), 0.1F, 100.0F);
+			mtx4P = glm::perspective(xCameraParam.viewZoom, ((GLfloat)WIDTH) / ((GLfloat)HEIGHT), 0.1F, 100.0F);
 
 			glUniformMatrix4fv(glGetUniformLocation(xshader.program_id(), "mtx4V"), 1, GL_FALSE, glm::value_ptr(mtx4V));
 			glUniformMatrix4fv(glGetUniformLocation(xshader.program_id(), "mtx4P"), 1, GL_FALSE, glm::value_ptr(mtx4P));
@@ -472,7 +472,6 @@ void view_offset(glmCameraParam * xCamera, double xpos, double ypos)
 	cameraFront.z = sin(glm::radians(xCamera->viewYaw)) * cos(glm::radians(xCamera->viewPitch));
 	xCamera->cameraFront = glm::normalize(cameraFront);
 }
-
 
 /**********************************************************/
 /**
@@ -595,7 +594,7 @@ bool key_movement(GLFWwindow * window, int key, int scancode, int action, int mo
 * @return void
 *
 */
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+void mouse_callback(GLFWwindow * window, double xpos, double ypos)
 {
 	glmCameraParam * xCamera = (glmCameraParam *)glfwGetWindowUserPointer(window);
 	if (NULL == xCamera)
@@ -625,7 +624,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 * @return void
 *
 */
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
 {
 	glmCameraParam * xCamera = (glmCameraParam *)glfwGetWindowUserPointer(window);
 	if (NULL == xCamera)
@@ -634,13 +633,13 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	}
 
 	GLfloat deltaValue = (GLfloat)(0.1F * yoffset);
-	if ((xCamera->viewScale >= 1.0F) && (xCamera->viewScale <= 45.0F))
-		xCamera->viewScale -= deltaValue;
+	if ((xCamera->viewZoom >= 1.0F) && (xCamera->viewZoom <= 45.0F))
+		xCamera->viewZoom -= deltaValue;
 
-	if (xCamera->viewScale < 1.0F)
-		xCamera->viewScale = 1.0F;
-	if (xCamera->viewScale > 45.0F)
-		xCamera->viewScale = 45.0F;
+	if (xCamera->viewZoom < 1.0F)
+		xCamera->viewZoom = 1.0F;
+	if (xCamera->viewZoom > 45.0F)
+		xCamera->viewZoom = 45.0F;
 
-	std::cout << "viewScale : " << xCamera->viewScale << std::endl;
+	std::cout << "viewScale : " << xCamera->viewZoom << std::endl;
 }
